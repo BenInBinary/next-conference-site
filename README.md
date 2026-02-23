@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Google Cloud Tech Conference - 1-Day Schedule Site (Next.js Version)
 
-## Getting Started
+This is a 1-day technical conference informational site detailing a mock 8-talk Google Cloud Event schedule. Setup to run entirely using a unified Next.js App Router stack.
 
-First, run the development server:
+## Features Included
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Strongly Typed Data Structure:** The schedule talks and speaker data has been formalized utilizing TypeScript interfaces (`src/data/schedule.ts`).
+- **React Frontend:** Utilizing React hooks (`useState`, `useEffect`) allows instant and seamless state responses to search and categorization filtering.
+- **Dynamic Search & Filtering:** Filter the schedule effectively in real-time by keyword (title, category, or speaker) or by utilizing category buttons.
+- **Responsive Layout:** Formatted beautifully to adjust to mobile phones or desktop size displays.
+- **Premium Aesthetics:** Colorful UI drawing inspiration from Google Cloud color themes such as deep blues, sharp reds, and yellow highlights within the base `.css`.
+- **Lunch Break Element:** Highlights exactly when the 60 min lunch break takes place.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Technologies Used
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework:** Next.js (App Router)
+- **Language:** TypeScript
+- **Styling:** CSS3 variables (`globals.css`) for high performance theming without Tailwind overhead.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🚀 Setup & Launch Instructions
 
-To learn more about Next.js, take a look at the following resources:
+### Prerequisites
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Ensure you have [Node.js](https://nodejs.org/) installed on your machine.
+You can verify it's installed by typing `node -v` in your terminal.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 1. Installation
 
-## Deploy on Vercel
+1. Navigate to the project directory:
+   ```bash
+   cd next-conference-site
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. Install the necessary dependencies (Next.js):
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 2. Running the Server
+
+1. Start the Next.js dev server by running:
+   ```bash
+   npm run dev
+   ```
+2. You should see a console message confirming the server has started:
+   ```
+   Ready in ... ms
+   ```
+3. Open a browser and navigate to: [http://localhost:3000](http://localhost:3000)
+
+
+## 🛠️ Making Changes
+
+### How to modify the data
+The core schedule talks and speaker relationships are typed and stored in `src/data/schedule.ts`. 
+
+### How to modify the UI design
+The UI styles live inside the `src/app/globals.css` file.
+We use CSS variables attached to the `:root` pseudo-class (at the top of the file) for quick-access theme swapping. Modifying the `var(--primary-blue)` variable will echo completely through the layout.
+
+### How to modify filtering logic
+The active filtering React logic is located in the client component `src/app/page.tsx`.
+It uses standard ES6 `.filter()` logic over an array dependent on `searchTerm` and `activeFilter` React state variable combinations. 

@@ -16,7 +16,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={openSans.className}>{children}</body>
+      <body className={openSans.className} suppressHydrationWarning>
+        <nav className="global-nav">
+          <div className="container nav-content">
+            <a href="/" className="nav-logo">Google Cloud App</a>
+            <div className="nav-links">
+              <a href="/" className="nav-link">Event Schedule</a>
+              <a href="/learning" className="nav-link">Backend Learning</a>
+            </div>
+          </div>
+        </nav>
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,0 +1,54 @@
+Backend-focused Full Stack Developer with 2+ years of experience building scalable web applications using Node.js, Express.js, React, and Next.js. 
+Strong background in MongoDB, REST API development, authentication systems, and cloud deployment using AWS and Vercel. Experienced in 
+blockchain integrations (ERC-20, ERC-721), secure encryption systems, and AI-powered applications. Comfortable building systems from scratch 
+and delivering production-ready features. 
+ 
+     SKILLS
+• Backend Development: Node.js, Express.js, Next.js (API Routes), Django, REST APIs, JWT Authentication, Role-Based Access Control, Middleware 
+Architecture, Serverless APIs. 
+• Frontend Development: React.js, Next.js, JavaScript (ES6+), Responsive UI Development, API Integration, Component-Based Architecture. 
+• Database Systems: MongoDB (Aggregation, Indexing, Schema Design, Triggers), SQL (Queries, Normalization), Vector Database (MongoDB Vector 
+Search). 
+• Blockchain & Web3: ERC-20 Token Integration, ERC-721 NFT Standards, Web3 Integration, Token-Based Asset Systems, Smart Contract Interaction. 
+• Cloud & Serverless: AWS Lambda, AWS API Gateway, AWS S3, Firebase, Vercel Deployment, Environment Configuration. 
+• Authentication & Security: JWT, AES-256 Encryption, ECDH End-to-End Encryption, Secure File Handling, Consent-Based Data Sharing Systems. 
+• AI & Automation: OpenAI API Integration, AI Chat Systems, WhatsApp Bot Integration, Document Intelligence Systems, Agent-Assisted Development 
+(ChatGPT, Gemini, Claude). 
+• Real-Time & Advanced Features: Real-Time Chat Systems, File Upload & Storage Systems, Vector Search Implementation, API Optimization, Large 
+Data Migration (5M+ Records). 
+• Languages: JavaScript, Python, TypeScript. 
+• Tools: VS Code, Postman, Git, GitHub, MongoDB Atlas, Firebase Console, AWS Console. 
+ 
+EXPERIENCE 
+Backend Developer - Minisoft Business Solution                                                                   From Jan 2024 to Jan 2026 
+• Product Architecture & API Development: Led backend development for multiple production-grade platforms including Nuvowallet, Terano (Carbon 
+Credit Marketplace), Contrato (Digital Contracts), Miniland (Real Estate Tokenization), and NuvoMedOS. Designed scalable REST APIs, authentication 
+systems, and modular backend architectures that enabled seamless integration with React and Next.js frontend applications. 
+• Database Optimization & Business Logic: Architected optimized MongoDB schemas with proper indexing and aggregation pipelines. Implemented 
+complex end-to-end API logic and automated migration of 5M+ records, significantly improving system performance and data reliability. 
+• Advanced Security & Encryption: Engineered secure data-sharing workflows using AES-256 symmetric encryption and ECDH-based end-to-end 
+encryption. Developed consent-based access mechanisms ensuring encrypted storage and secure transmission of sensitive digital assets. 
+• Web3 & Blockchain Integration: Implemented blockchain-oriented features interfacing with ERC-20 and ERC-721 standards, enabling token minting, 
+transfers, and asset tokenization across carbon credits and real estate marketplaces. 
+• AI & Intelligent Document Processing: Integrated OpenAI-powered document intelligence pipelines with MongoDB vector search to enable contextual 
+multi-document chat, semantic search, and WhatsApp-based document ingestion systems. 
+• Cloud & Serverless Architecture: Deployed scalable backend services using AWS Lambda, API Gateway, S3, Firebase, and Vercel. Designed serverless 
+workflows for real-time chat systems and secure file handling. 
+• System Integration & Production Stability: Developed structured API documentation and Postman workflows, implemented robust error handling and 
+role-based access control, ensuring stable and reliable production releases. 
+SDE Intern – Primathon Technology Ventures                                                              From Aug 2023 to Jan 2024 
+• Full-Stack Development & Feature Implementation: Completed structured remote training followed by a client-focused internship, where I built full
+stack applications including a Mobile Settings Clone and an Astrologer Platform using React.js, Node.js, and MongoDB, implementing core features such 
+as authentication, API integration, and dynamic UI components. 
+• Backend API Development & Database Handling: Developed REST APIs using Node.js and Express, designed MongoDB schemas, and implemented 
+aggregation pipelines to support structured data storage and efficient querying. 
+• Real-Time Chat & Event-Based Systems: Built chat application prototypes using Firebase and Socket.IO, implementing real-time messaging logic and 
+event-driven communication between client and server. 
+• Authentication & Middleware Logic: Implemented OTP-based authentication flows, request validation, and middleware-based authorization to secure 
+API endpoints and manage user sessions. 
+• Data Migration & Automation: Automated ingestion of large Excel datasets into MongoDB using batch processing scripts and optimized schema design 
+to ensure reliable storage and retrieval. 
+• Code Maintainability & Debugging Support: Contributed to reusable backend utilities, structured logging, and Postman API testing collections to 
+improve debugging efficiency and maintain clean project structure. 
+• Application of Academic Foundations: Applied prior experience in Python and Django projects (including a student dropout analysis system and 
+marketplace application) to strengthen backend logic, data modeling, and structured project development practices. 
