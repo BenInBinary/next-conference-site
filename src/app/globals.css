@@ -1,0 +1,343 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-blue: #4285F4;
+  --primary-red: #EA4335;
+  --primary-yellow: #FBBC05;
+  --primary-green: #34A853;
+  --dark-bg: #202124;
+  --light-bg: #F8F9FA;
+  --white: #FFFFFF;
+  --text-primary: #202124;
+  --text-secondary: #5F6368;
+  --border-color: #DADCE0;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.15);
+  --border-radius: 8px;
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--light-bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header Section */
+.hero-section {
+  background: linear-gradient(135deg, var(--primary-blue), #2b60b5);
+  color: var(--white);
+  padding: 60px 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background-color: var(--primary-yellow);
+  border-radius: 50%;
+  opacity: 0.2;
+}
+
+.hero-section::after {
+  content: "";
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 150px;
+  height: 150px;
+  background-color: var(--primary-red);
+  border-radius: 50%;
+  opacity: 0.2;
+}
+
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  font-weight: 300;
+  margin-bottom: 30px;
+  opacity: 0.9;
+}
+
+.event-details {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px 20px;
+  border-radius: 30px;
+  backdrop-filter: blur(5px);
+  font-weight: 600;
+  position: relative;
+  z-index: 10;
+}
+
+/* Main Content */
+main {
+  padding: 40px 0;
+}
+
+/* Filters Section */
+.filters-section {
+  background: var(--white);
+  padding: 24px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 40px;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 15px 20px;
+  font-size: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  outline: none;
+  transition: var(--transition);
+  margin-bottom: 20px;
+}
+
+.search-container input:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2);
+}
+
+.category-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  background: var(--white);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.filter-btn:hover {
+  background-color: #f1f3f4;
+  color: var(--text-primary);
+}
+
+.filter-btn.active {
+  background-color: var(--primary-blue);
+  color: var(--white);
+  border-color: var(--primary-blue);
+}
+
+/* Schedule Section */
+.section-title {
+  font-size: 2rem;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.talk-card {
+  background: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  overflow: hidden;
+  transition: var(--transition);
+  border-left: 5px solid var(--primary-blue);
+}
+
+.talk-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+.talk-card.break-card {
+  border-left-color: var(--primary-yellow);
+  background: #fffdf7;
+}
+
+.talk-card.break-card .talk-category {
+  color: #d19a00;
+  background: #fff8e1;
+}
+
+.talk-time-container {
+  background-color: var(--light-bg);
+  padding: 20px;
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border-color);
+  font-weight: 700;
+  color: var(--primary-blue);
+  text-align: center;
+}
+
+.break-card .talk-time-container {
+  color: #d19a00;
+}
+
+.talk-content {
+  padding: 20px;
+  flex-grow: 1;
+}
+
+.talk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.talk-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-right: 15px;
+}
+
+.talk-category {
+  background: #e8f0fe;
+  color: var(--primary-blue);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.talk-description {
+  color: var(--text-secondary);
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+}
+
+.talk-speakers {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.speaker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.speaker-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--primary-green);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.speaker-linkedin {
+  color: #0077b5;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.speaker-linkedin:hover {
+  color: #004471;
+  text-decoration: underline;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  background: var(--white);
+  border-radius: var(--border-radius);
+}
+
+.loader {
+  text-align: center;
+  padding: 40px;
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+
+/* Footer */
+footer {
+  background-color: var(--text-primary);
+  color: var(--white);
+  text-align: center;
+  padding: 30px 0;
+  margin-top: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .talk-card {
+    flex-direction: column;
+  }
+
+  .talk-time-container {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    min-width: unset;
+    padding: 15px;
+  }
+
+  .talk-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
