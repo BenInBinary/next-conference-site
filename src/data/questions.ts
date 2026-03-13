@@ -270,6 +270,12 @@ const cursorPagi = await db.collection('posts')
         answer: "The Event Loop dictates how Node executes asynchronous operations. Since JS is single-threaded, the Event Loop assigns tasks to the OS kernel. Upon resolution, callbacks are sent to the task queue. Phases include Timers, Pending Callbacks, Poll, Check, and Close callbacks."
     },
     {
+        id: "backend-1a",
+        category: "Node.js & express",
+        question: "Elaborate on the different phases of the Node.js Event Loop. How does it process I/O tasks and execute their respective callbacks across these phases?",
+        answer: "The Event Loop has distinct phases executed sequentially. 1) Timers: executes callbacks from setTimeout and setInterval. 2) Pending Callbacks: executes deferred I/O callbacks. 3) Idle/Prepare: internal only. 4) Poll: retrieves new I/O events and executes their callbacks (this is where most execution time is spent). 5) Check: executes setImmediate callbacks. 6) Close Callbacks: executes close events (e.g., socket.on('close')). Node.js continuously loops through these phases as long as there are pending asynchronous operations."
+    },
+    {
         id: "backend-2",
         category: "Node.js & express",
         question: "What is Middleware in Express.js?",
@@ -1207,5 +1213,677 @@ console.log(normalAdd5(7)); // 12`
 // [ Client Request ] -                | (async event trigger)
 //                     \\-> [ Query Handler ]   <- reads  <- [ Read DB (Denormalized NoSQL/Elastic) ]
 // * Ideal for heavy read-intensive systems where reads vastly outnumber writes.`
+    },
+
+    // --- RESUME-SPECIFIC CATEGORY (2 YoE Candidate) ---
+    {
+        id: "res-1",
+        category: "Resume Screening (2 YoE)",
+        question: "You mentioned Serverless APIs and AWS Lambda on your resume. How do you handle MongoDB database connections in a Serverless environment to avoid exhausting connection pools?",
+        answer: "In a traditional server, you connect once on startup. In Serverless (Lambda), containers rapidly spin up and down. To prevent thousands of concurrent connections during a traffic spike, you must cache the database connection object outside the main handler function so it can be reused across warm invocations.",
+        snippet: `// AWS Lambda Node.js Example
+let cachedDb = null;
+
+exports.handler = async (event) => {
+  if (!cachedDb) {
+    // Connect only if we don't have a cached connection
+    const client = await MongoClient.connect(process.env.MONGO_URI);
+    cachedDb = client.db('myDatabase');
+  }
+  
+  const users = await cachedDb.collection('users').find().toArray();
+  return { statusCode: 200, body: JSON.stringify(users) };
+};`
+    },
+    {
+        id: "res-2",
+        category: "Resume Screening (2 YoE)",
+        question: "You have experience with both JWT Authentication and Role-Based Access Control (RBAC). How do you implement RBAC safely using JWTs in an Express.js Serverless API?",
+        answer: "When a user logs in, I embed their assigned role (e.g., 'admin' or 'user') into the JWT payload. On secured routes, I use an authentication middleware to verify the token's cryptographic signature, then an authorization middleware snippet to check if the decoded role matches the required permission to access the endpoint.",
+        snippet: `// Middleware to check roles
+function requireRole(requiredRole) {
+  return (req, res, next) => {
+    // Assuming authMiddleware already ran and populated req.user from JWT
+    const userRole = req.user.role; 
+    
+    if (userRole !== requiredRole) {
+      return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
+    }
+    next();
+  };
+}
+
+// Route usage
+app.delete('/api/posts/:id', verifyToken, requireRole('admin'), deletePost);`
+    },
+    {
+        id: "res-3",
+        category: "Resume Screening (2 YoE)",
+        question: "Since you've worked with Vector databases (MongoDB Vector Search) and OpenAI API Integration, can you describe the flow of answering a user's question using Retrieval-Augmented Generation (RAG)?",
+        answer: "First, I take the user's question and send it to the OpenAI Embeddings API to convert it into a vector. I then use MongoDB Vector Search to find the most mathematically similar document chunks in the database. Finally, I inject those relevant text chunks into the prompt of an LLM (like GPT-4) as context to generate a factual, grounded response.",
+        snippet: `// 1. Get embedding for the user's question
+const { data } = await openai.embeddings.create({ input: question, model: "text-embedding-ada-002" });
+const queryVector = data[0].embedding;
+
+// 2. Search MongoDB for similar documents
+const relatedDocs = await db.collection('documents').aggregate([
+  {
+    $vectorSearch: {
+      queryVector: queryVector,
+      path: 'embedding',
+      numCandidates: 100,
+      limit: 3,
+      index: 'vector_index'
+    }
+  }
+]).toArray();
+
+// 3. Build prompt and send to LLM
+const context = relatedDocs.map(d => d.text).join('\\n');
+const completion = await openai.chat.completions.create({
+  model: "gpt-4",
+  messages: [
+    { role: "system", content: \`Answer using only this context: \${context}\` },
+    { role: "user", content: question }
+  ]
+});`
+    },
+    {
+        id: "res-4",
+        category: "Resume Screening (2 YoE)",
+        question: "Your resume lists ERC-20 and ERC-721 token integrations. As a backend developer, what are the primary security and stability considerations when using ethers.js to sign Web3 transactions on a Node.js server?",
+        answer: "The biggest risk is compromising the wallet's private key. You should never hardcode keys or expose them in standard .env files on easily accessible servers. For production, keys must be managed in a secure secret manager (like AWS KMS). Additionally, the server must handle failed transactions gracefully by implementing try/catch blocks and monitoring gas limits so the API doesn't crash or hang.",
+        snippet: `// Securely initializing a wallet using a Secret Manager provider
+const privateKey = await SecretManager.getSecret('MAINNET_DEPLOYER_KEY');
+const provider = new ethers.JsonRpcProvider('https://eth-mainnet.alchemyapi.io/v2/API_KEY');
+const wallet = new ethers.Wallet(privateKey, provider);
+
+try {
+  const contract = new ethers.Contract(address, abi, wallet);
+  const tx = await contract.mintNFT(userAddress);
+  await tx.wait(); // Wait for network confirmation
+  return { success: true, txHash: tx.hash };
+} catch (error) {
+  console.error("Blockchain transaction failed:", error);
+  // Important: return a handled error so the server continues running
+  return { success: false, error: "Minting failed" };
+}`
+    },
+    {
+        id: "res-5",
+        category: "Resume Screening (2 YoE)",
+        question: "You've built Real-Time Chat Systems. How do you scale WebSocket communication when your backend is horizontally scaled across multiple instances (like Vercel or AWS Load Balancer)?",
+        answer: "By default, WebSocket connections are stateful to a single server instance. If User A connects to Server 1, and User B connects to Server 2, they cannot chat directly. I would use a Pub/Sub mechanism like Redis. When Server 1 receives a message, it publishes it to Redis, which then broadcasts it to all other Node.js servers, ensuring User B receives the event seamlessly.",
+        snippet: `// Implementing Redis Pub/Sub Adapter with Socket.io
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const { createAdapter } = require("@socket.io/redis-adapter");
+const { createClient } = require("redis");
+
+const httpServer = createServer();
+const io = new Server(httpServer);
+
+const pubClient = createClient({ url: "redis://internal-redis-url:6379" });
+const subClient = pubClient.duplicate();
+
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+  // Now Socket.io automatically syncs events across all server instances
+  io.adapter(createAdapter(pubClient, subClient));
+  io.listen(3000);
+});`
+    },
+    {
+        id: "res-6",
+        category: "Resume Screening (2 YoE)",
+        question: "You've used Next.js (API Routes) and deployed on Vercel. How do you implement a Component-Based Architecture where a React Client Component securely fetches data from your Next.js API Route without exposing environment variables?",
+        answer: "I abstract reusable UI elements into smaller React components. Next.js API Routes run securely on the server (Node.js), meaning I can use `process.env.SECRET_KEY` inside `src/app/api/route.ts` safely. The Client Component makes a standard `fetch()` call to `/api/my-route`, and Vercel handles the serverless execution and edge caching seamlessly.",
+        snippet: `// src/app/api/data/route.ts (Server-side)
+export async function GET() {
+  // SECRET_KEY is absolutely hidden from the browser
+  const data = await fetchExternalAPI(process.env.SECRET_KEY);
+  return NextResponse.json(data);
+}
+
+// src/components/DataWidget.tsx (Client-side)
+"use client";
+import { useEffect, useState } from "react";
+
+export default function DataWidget() {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    fetch('/api/data').then(res => res.json()).then(setData);
+  }, []);
+  return <div>{data ? data.title : 'Loading...'}</div>;
+}`
+    },
+    {
+        id: "res-7",
+        category: "Resume Screening (2 YoE)",
+        question: "For Frontend Development, how do you utilize React.js and modern JavaScript (ES6+) to build a Responsive UI, particularly when handling complex state or API Integrations across multiple viewports?",
+        answer: "I use ES6+ features like destructuring, async/await, and arrow functions to keep my React components clean. For responsive design, I prefer CSS modules or Tailwind, using media queries to adjust layout grids. For state and API integration, I use custom hooks to separate the fetching logic from the UI presentation, ensuring the component updates smoothly when data arrives.",
+        snippet: `// Responsive Component utilizing ES6+ and Custom Hooks
+import useWindowSize from '@/hooks/useWindowSize';
+import useApiData from '@/hooks/useApiData';
+
+const Dashboard = () => {
+  const { width } = useWindowSize(); // Custom hook for responsive logic
+  const { data, loading, error } = useApiData('/api/metrics'); // API Integration hook
+
+  if (loading) return <p>Loading metrics...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  // ES6 Destructuring
+  const { totalUsers, activeSessions } = data;
+
+  return (
+    <div className={width < 768 ? 'mobile-layout' : 'desktop-grid'}>
+      <Card title="Users" value={totalUsers} />
+      <Card title="Sessions" value={activeSessions} />
+    </div>
+  );
+};`
+    },
+    {
+        id: "res-8",
+        category: "Resume Screening (2 YoE)",
+        question: "Your resume includes Django, Python, and SQL. When building REST APIs in Django that query a strictly Normalized SQL database, how do you optimize Python performance and avoid the N+1 query problem?",
+        answer: "In a fully normalized SQL database, data is split across multiple tables. If I loop through a queryset in Django and access a foreign key relationship for each item, it silently fires a new SQL query every loop (the N+1 problem). To optimize this REST API, I strictly use Django's `select_related()` (for foreign keys) or `prefetch_related()` (for many-to-many) to fetch all related data efficiently in a single SQL JOIN or batch query.",
+        snippet: `# Django Python Example - Avoiding N+1 Problem
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import Order
+
+class OrderListView(APIView):
+    def get(self, request):
+        # ❌ BAD: Fetches orders, but looping through to get customer name causes N queries
+        # orders = Order.objects.all() 
+        
+        # ✅ GOOD: Fetches orders AND joins the Customer table in 1 optimized SQL query
+        orders = Order.objects.select_related('customer').all()
+        
+        data = [
+            {
+                "id": order.id,
+                "customer_name": order.customer.name, # No extra DB hit!
+                "total": order.total
+            }
+            for order in orders
+        ]
+        return Response(data)`
+    },
+    {
+        id: "res-9",
+        category: "Resume Screening (2 YoE)",
+        question: "Using MongoDB Atlas, how would you design the Schema and leverage Indexing to handle computationally heavy Aggregations, and could MongoDB Triggers assist in a Large Data Migration (5M+ records)?",
+        answer: "For schema design, I ensure frequently queried fields are covered by Compound Indexes to speed up Aggregation pipelines ($match, $group). During a 5M+ record migration, I run aggregations in batched cursors rather than loading everything into RAM. I would use MongoDB Atlas Triggers during the migration to capture live 'Insert/Update' events on the old collection and simultaneously mirror them to the new schema, ensuring zero-downtime.",
+        snippet: `// 1. Defining a Compound Index for an Aggregation Pipeline
+db.sales.createIndex({ "storeLocation": 1, "date": -1 });
+
+// 2. Optimized Aggregation using the Index
+const pipeline = [
+  { $match: { storeLocation: "NY", date: { $gte: new Date("2023-01-01") } } }, // Hits index!
+  { $group: { _id: "$item", totalSales: { $sum: "$price" } } }
+];
+
+// 3. Atlas Trigger Function Example (Serverless Migration Sync)
+exports = function(changeEvent) {
+  const docId = changeEvent.documentKey._id;
+  const fullDocument = changeEvent.fullDocument;
+  
+  if (changeEvent.operationType === "insert") {
+    // Transform schema and mirror to the V2 collection automatically
+    const transformedDoc = { legacyId: docId, name: fullDocument.oldNameField };
+    context.services.get("mongodb-atlas").db("prod").collection("users_v2").insertOne(transformedDoc);
+  }
+};`
+    },
+    {
+        id: "res-10",
+        category: "Resume Screening (2 YoE)",
+        question: "When building File Upload & Storage Systems, how do you combine AWS S3, AWS API Gateway, and your Express Node.js backend to ensure Secure File Handling for sensitive user uploads?",
+        answer: "To avoid bottlenecking the Node.js backend with large file streams, I use highly secure Pre-signed URLs. The client requests an upload link from the Express API. The backend verifies their JWT, generates a temporary AWS S3 pre-signed URL (valid for 5 mins), and returns it. The client then uploads the file directly to S3. To secure downloads, I generate read-only pre-signed URLs upon authorized request.",
+        snippet: `// Node.js Express - Generating an AWS S3 Pre-signed Upload URL
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+
+const s3Client = new S3Client({ region: "us-east-1" });
+
+app.get('/api/upload-url', authenticateJWT, async (req, res) => {
+  const fileName = \`uploads/\${req.user.id}/\${Date.now()}.pdf\`;
+  
+  const command = new PutObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET,
+    Key: fileName,
+    ContentType: "application/pdf"
+  });
+
+  // URL expires in 300 seconds (5 minutes)
+  const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  
+  res.json({ url: presignedUrl, key: fileName });
+});`
+    },
+    {
+        id: "res-11",
+        category: "Resume Screening (2 YoE)",
+        question: "You've configured environments using Firebase and the Firebase Console. How do you securely manage Environment Configuration across different deployment stages (Dev, Staging, Prod) in a Firebase-backed REST API?",
+        answer: "I maintain strictly separate Firebase Projects for Dev, Staging, and Production in the Firebase Console to ensure data isolation. In the Node.js/Next.js backend, I use different \`.env\` files (e.g., \`.env.development\`, \`.env.production\`) containing the respective Firebase Admin SDK service account credentials. When deploying via Vercel or AWS, I inject the production environment variables securely via their dashboard panels.",
+        snippet: `// Initializing Firebase Admin dynamically based on Environment Configuration
+import admin from 'firebase-admin';
+
+// Parse the service account JSON stored securely in Vercel/AWS env variables
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    // Dynamically point to the correct DB based on NODE_ENV
+    databaseURL: process.env.NODE_ENV === 'production' 
+      ? "https://prod-db.firebaseio.com" 
+      : "https://dev-db.firebaseio.com"
+  });
+}`
+    },
+    {
+        id: "res-12",
+        category: "Resume Screening (2 YoE)",
+        question: "For Consent-Based Data Sharing Systems, how do you utilize ECDH End-to-End Encryption combined with AES-256 Encryption in your backend to ensure the platform cannot read the users' messages?",
+        answer: "ECDH allows two users to securely generate a shared cryptographic secret over an open channel. In a chat or data sharing system, User A and User B exchange their public keys via the backend. Both compute the exact same shared secret locally. User A uses this secret as an AES-256 symmetric key to encrypt the payload. The backend only stores and forwards the AES-256 ciphertext. Since the backend doesn't possess the private keys, it mathematically cannot decrypt the data.",
+        snippet: `// Node.js Crypto Example - ECDH Key Exchange logic (Usually happens on the client)
+const crypto = require('crypto');
+
+// User A generates keys
+const alice = crypto.createECDH('secp256k1');
+alice.generateKeys();
+
+// User B generates keys
+const bob = crypto.createECDH('secp256k1');
+bob.generateKeys();
+
+// Both users exchange public keys through the backend...
+// They both compute the identical shared secret
+const aliceSharedSecret = alice.computeSecret(bob.getPublicKey());
+
+// Alice uses the shared secret as the AES-256 Key to encrypt the document
+const iv = crypto.randomBytes(16);
+const cipher = crypto.createCipheriv('aes-256-cbc', aliceSharedSecret.slice(0, 32), iv);
+let encryptedData = cipher.update('Confidential Consent Data', 'utf8', 'hex');
+encryptedData += cipher.final('hex');
+
+// The backend ONLY sees 'encryptedData' and 'iv'. It cannot read the text.`
+    },
+    {
+        id: "res-13",
+        category: "Resume Screening (2 YoE)",
+        question: "You've built WhatsApp Bot Integrations and Document Intelligence Systems. Using TypeScript, how do you set up a webhook to receive a WhatsApp document, process it through an AI Agent, and handle the asynchronous response?",
+        answer: "I set up a POST endpoint verified by a webhook token. When WhatsApp sends a document payload, I acknowledge the request immediately (200 OK) to prevent WhatsApp from retrying. Then, asynchronously, I download the media securely, pass the text/image to the Document Intelligence System (like Claude or Gemini API), and use the WhatsApp Cloud API to send the finalized AI response back to the user's phone.",
+        snippet: `// TypeScript Express - WhatsApp Webhook for Document Intelligence
+import express, { Request, Response } from 'express';
+import { processDocumentWithAI, sendWhatsAppMessage } from './services';
+
+const app = express();
+app.use(express.json());
+
+app.post('/webhook/whatsapp', async (req: Request, res: Response) => {
+  // 1. Acknowledge Receipt Immediately
+  res.sendStatus(200); 
+
+  try {
+    const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    
+    // Check if the user sent a document
+    if (message && message.type === 'document') {
+      const documentId = message.document.id;
+      const senderPhone = message.from;
+
+      // 2. Process Asynchronously (Download -> AI Analysis)
+      const aiAnalysisResult = await processDocumentWithAI(documentId);
+      
+      // 3. Reply to User Out-of-Band
+      await sendWhatsAppMessage(senderPhone, \`AI Analysis Complete: \${aiAnalysisResult}\`);
+    }
+  } catch (error) {
+    console.error("Webhook processing failed:", error);
+  }
+});`
+    },
+    {
+        id: "res-14",
+        category: "Resume Screening (2 YoE)",
+        question: "For API Optimization, how do you use Postman and the AWS Console to monitor, test, and reduce the latency of a slow Serverless API endpoint?",
+        answer: "I use Postman to consistently run variable load tests and measure the HTTP response times of the endpoint. If it's slow, I open the AWS Console and dive into AWS CloudWatch Logs and AWS X-Ray traces to pinpoint the exact bottleneck in the Lambda execution. To optimize, I might increase the Lambda's RAM (which proportionally increases CPU), optimize inefficient database indexes, or implement Redis caching to eliminate redundant backend processing.",
+        snippet: `// Postman Pre-request Script (Automated API Optimization Testing)
+// Automating Auth token generation for load testing
+pm.sendRequest({
+    url: 'https://api.myapp.com/v1/auth/login',
+    method: 'POST',
+    header: 'Content-Type:application/json',
+    body: {
+        mode: 'raw',
+        raw: JSON.stringify({ email: pm.environment.get("TEST_USER"), password: pm.environment.get("TEST_PASS") })
+    }
+}, function (err, res) {
+    if (!err) {
+        // Automatically inject token into the environment for the next slow endpoint test
+        pm.environment.set("JWT_TOKEN", res.json().token);
+    }
+});
+
+// Postman Test Script checking API Latency Optimization
+pm.test("Response time is optimized (less than 200ms)", function () {
+    pm.expect(pm.response.responseTime).to.be.below(200);
+});`
+    },
+    {
+        id: "res-15",
+        category: "Resume Screening (2 YoE)",
+        question: "In your daily workflow using VS Code, Git, and GitHub for developing Token-Based Asset Systems, how do you effectively utilize Agent-Assisted Development (ChatGPT, Gemini, Claude) while ensuring smart contract code quality and security?",
+        answer: "I use AI extensions like GitHub Copilot natively in VS Code for rapid boilerplate generation (like writing ERC-20 test suites). However, for mission-critical logic in Token-Based Asset Systems, I never blindly trust AI output due to hallucination risks and smart contract vulnerabilities (like Reentrancy). I manually review the AI's algorithm, run comprehensive local hardhat/foundry unit tests, and rely on Git/GitHub Pull Requests with CI/CD checks before committing to the main branch.",
+        snippet: `// AI-Assisted Smart Contract Testing (Generated via ChatGPT, manually verified)
+// Using Hardhat & Ethers.js to test a Token-Based Asset System
+describe("Token Asset System", function () {
+  it("Should prevent Reentrancy attack on withdrawals", async function () {
+    const TokenSystem = await ethers.getContractFactory("SecureTokenSystem");
+    const token = await TokenSystem.deploy();
+    
+    const Attacker = await ethers.getContractFactory("MaliciousContract");
+    const attacker = await Attacker.deploy(token.target);
+
+    // AI suggested test case: Ensure the malicious contract fails
+    await expect(attacker.attack()).to.be.revertedWith("ReentrancyGuard: reentrant call");
+  });
+});`
+    },
+
+    // --- RESUME-SPECIFIC CATEGORY (Junior / Entry-Level Candidate) ---
+    {
+        id: "res-jr-1",
+        category: "Resume Screening (Junior Level)",
+        question: "You mentioned Component-Based Architecture and Next.js. What is component-based architecture in plain English, and how do you decide when to break a piece of UI into its own separate Component?",
+        answer: "A good answer from a junior is that component-based architecture means building a web page out of reusable pieces like LEGO blocks. They break UI into components when a piece of code is reused multiple times (like a Button or Card), or when a file simply gets too long and hard to read. They might also mention isolating state—putting a complex form into its own component so it doesn't cause the parent page to re-render constantly.",
+        snippet: `// A good fundamental answer using React/Next.js
+export default function Dashboard() {
+  return (
+    <div>
+      {/* Reusable blocks of code isolated by responsibility */}
+      <Navbar />
+      <main className="grid">
+        <UserStats />
+        <RecentActivityList />
+      </main>
+      <Footer />
+    </div>
+  );
+}`
+    },
+    {
+        id: "res-jr-2",
+        category: "Resume Screening (Junior Level)",
+        question: "You've built REST APIs with Node.js and Express.js using Middleware. In simple terms, what exactly is Middleware and how did you use it for JWT Authentication?",
+        answer: "Middleware is just a function that runs in the middle of a request, before the final route logic executes. I used it for JWT Auth by writing a simple function that checks if the incoming request has an 'Authorization' header. If the token is valid, it uses \`next()\` to let the request pass to the final route. If not, it returns a 401 Unauthorized error immediately.",
+        snippet: `// Express.js typical junior middleware answer
+const jwtAuth = (req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).send("No token provided");
+  
+  // Verify token, then pass control to the actual route handler
+  if (verify(token)) {
+    next(); 
+  } else {
+    res.status(403).send("Invalid token");
+  }
+};`
+    },
+    {
+        id: "res-jr-3",
+        category: "Resume Screening (Junior Level)",
+        question: "You have MongoDB Aggregation and Indexing on your resume. What is an index, and why would we need one if the queries already work without it?",
+        answer: "An index is like the table of contents in a book. Without it, MongoDB has to perform a 'collection scan'—reading every single document in the database to find a match, which is very slow if there are millions of records. When we add an index to a specific field (like a user's email), MongoDB uses a B-Tree structure to find it almost instantly.",
+        snippet: `// A simple understanding of MongoDB indexing
+// Creating an index makes searches practically instant
+db.users.createIndex({ email: 1 });
+
+// Without an index, this query must scan every single user in the DB
+db.users.find({ email: "test@example.com" });`
+    },
+    {
+        id: "res-jr-4",
+        category: "Resume Screening (Junior Level)",
+        question: "You listed AWS Lambda, API Gateway, and Vercel Deployment. How is deploying an API on a Serverless platform different from running it locally on your laptop with \`npm run dev\`?",
+        answer: "When I run it locally, the Node.js server is always 'on' and listening. In a Serverless environment like AWS Lambda or Vercel API Routes, there is no permanent server running. AWS automatically spins up the code container only when an HTTP request comes in. It's cheaper because we only pay when the API is actively executing, but it can have a 'cold start' delay for the very first request.",
+        snippet: `// Understanding the Serverless paradigm shift
+// Local laptop:
+// \`app.listen(3000)\` runs forever, consuming RAM 24/7.
+
+// Serverless (AWS Lambda):
+exports.handler = async (event) => {
+  // Wakes up on demand, does exactly one job, then sleeps.
+  return { statusCode: 200, body: "Hello Serverless" };
+};`
+    },
+    {
+        id: "res-jr-5",
+        category: "Resume Screening (Junior Level)",
+        question: "You've worked with ERC-20 tokens and Web3 Integration. From a Javascript frontend, how do you actually let a user send tokens to someone else if your app doesn't know their password?",
+        answer: "My frontend code never knows the user's private key, so it cannot move funds directly. Instead, I use a library like ethers.js to connect to the user's browser wallet extension (like MetaMask). The codebase prepares the transaction and asks the wallet to sign it. A popup appears for the user to securely click 'Approve'. Once they approve, the wallet software executes the transaction on the blockchain.",
+        snippet: `// Interacting with user wallets securely via ethers.js
+async function sendTokens() {
+  // Connect to the user's injected browser wallet (e.g. MetaMask)
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner(); // Prompts the user
+  
+  // The popup appears, asking the user to confirm the transaction signature
+  const contract = new ethers.Contract(tokenAddress, abi, signer);
+  await contract.transfer(receiverAddress, amount);
+}`
+    },
+    {
+        id: "res-jr-6",
+        category: "Resume Screening (Junior Level)",
+        question: "You integrated the OpenAI API and built an AI Chat System. If you are deploying this to production, how do you make sure random people on the internet don't steal your OpenAI API key from the website code?",
+        answer: "I must never put the OpenAI API key in the React or Next.js Client Components, because anyone could 'Inspect Element' in their browser and steal it. Instead, I store the key in an environment variable on my Node.js or Next.js API Route. The frontend sends the user's chat message to my backend, and my backend securely talks to OpenAI hidden from the public.",
+        snippet: `// The Junior should know NEVER to do this:
+// const openai = new OpenAI({ apiKey: "sk-1234..." }); // HARDCODED IN FRONTEND = BAD
+
+// They should know TO do this:
+// my-api-route.js (Backend)
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const response = await openai.chat.completions.create({ ... });
+res.json(response);`
+    },
+    {
+        id: "res-jr-7",
+        category: "Resume Screening (Junior Level)",
+        question: "You mentioned Real-Time Chat Systems. Why did you use WebSockets (or Socket.io) instead of just making a standard HTTP GET request to check for new messages?",
+        answer: "A standard HTTP or REST API is strictly request/response, requiring the client to explicitly ask for new data every time ('polling'). If we used HTTP for chat, the app would have to pointlessly ping the server every second to check for messages. WebSockets keep an open, persistent connection, allowing the server to instantly 'push' new data to the receiver the millisecond someone types a message.",
+        snippet: `// Polling (Bad for real-time chat)
+// setInterval(() => fetch('/api/messages'), 1000); 
+
+// WebSockets (Good for real-time chat)
+socket.on('new_message', (message) => {
+  // Triggers instantly the moment the server pushes the data!
+  setChatLogs(prev => [...prev, message]);
+});`
+    },
+    {
+        id: "res-jr-8",
+        category: "Resume Screening (Junior Level)",
+        question: "You have File Uploads and AWS S3 listed. If a user uploads a large 50MB video, what is a simple way you've handled that process from frontend to server?",
+        answer: "A basic way I've handled it is using a FormData object in React to send the file to my Node.js backend. On the backend, I used the 'multer' middleware to intercept the file. I can either save it temporarily to the server disk and then upload it to AWS S3 using the AWS SDK, or I can configure multer-s3 to stream it directly into the bucket.",
+        snippet: `// Junior typically handles file uploads using multer
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+
+app.post('/api/upload', upload.single('videoFile'), async (req, res) => {
+  // req.file contains the basic information
+  const file = req.file;
+  
+  // From here, they might use the aws-sdk to upload 'file.path' to S3
+  await s3Client.send(new PutObjectCommand({ Bucket: 'my-bucket', Key: file.filename, Body: fileStream }));
+  res.send('Upload complete');
+});`
+    },
+    {
+        id: "res-jr-9",
+        category: "Resume Screening (Junior Level)",
+        question: "You touched on MongoDB Vector Search for AI. In plain English, what is a Vector Database actually doing when we use it for an AI search?",
+        answer: "Instead of searching for exact keyword matches (like searching for the word 'apple'), an AI system uses an 'Embedding' to turn sentences into a long list of mathematical numbers that represent the underlying 'meaning'. A Vector Database stores these lists of numbers. When a user asks a question, it finds the stored numbers that are mathematically closest to the question's numbers, allowing it to find relevant context even if they used completely different words.",
+        snippet: `// The concept is shifting from "Exact Match" to "Meaning Match"
+// Exact Match (Standard SQL):
+// SELECT * FROM docs WHERE text LIKE '%car%'; (Misses the word 'automobile')
+
+// Vector Match (AI Embeddings):
+// Search: "Vehicle with four wheels"
+// Returns: "The red automobile drove fast." (Found via mathematical similarity to the concept)`
+    },
+    {
+        id: "res-jr-10",
+        category: "Resume Screening (Junior Level)",
+        question: "You use tools like GitHub and AI Assistants (ChatGPT/Claude). As a junior developer, how do you use AI safely without introducing bugs or bad code into our codebase?",
+        answer: "I use AI mainly to help me understand error messages, write repetitive boilerplate code faster, or explain confusing concepts. I always treat it like a helpful peer, but I don't paste code I don't understand blindy. I make sure to read the generated code carefully, thoroughly test it locally in my VS Code environment, and push it via a Git Pull Request for Senior code review.",
+        snippet: `// Best Practices for Agent-Assisted Development:
+// 1. Ask AI to "Explain this code" rather than "Write this for me".
+// 2. Cross-reference AI syntax with official Documentation (Next.js, MongoDB).
+// 3. Write unit tests to prove the AI's logic actually works.
+// 4. Never paste sensitive API keys or company secrets into public ChatGPT.`
+    },
+    {
+        id: "res-jr-11",
+        category: "Resume Screening (Junior Level)",
+        question: "You have Django and Python on your resume. In a few words, what is Django and how does a basic 'View' work when a user visits a webpage?",
+        answer: "Django is a Python framework that makes building backend web servers fast. When a user visits a URL, Django's router sends the request to a 'View' function. The View function can talk to the database to grab data, maybe put that data into an HTML template, and then returns the final webpage (or JSON) back to the user's browser.",
+        snippet: `# A very simple junior-level Django view
+from django.http import JsonResponse
+from .models import User
+
+def hello_user(request, user_id):
+    # The view gets data from the Database (Model)
+    user = User.objects.get(id=user_id)
+    # And returns a response to the user's screen
+    return JsonResponse({"message": f"Hello {user.name}"})`
+    },
+    {
+        id: "res-jr-12",
+        category: "Resume Screening (Junior Level)",
+        question: "You mentioned SQL Queries and Normalization. What does it mean to 'Normalize' a database table, and why is it generally a good idea for beginners?",
+        answer: "Normalization means organizing database tables to reduce duplicate data. Instead of typing the full 'Company Name' and 'Company Address' on every single employee row (which causes bugs if an address changes), we put the Company info in its own table, and just link the Employee to the Company via an ID. It keeps data clean and prevents update errors.",
+        snippet: `-- Un-Normalized (Bad: Repeating 'Sales' and 'NY' manually)
+-- John  | Sales | NY
+-- Alice | Sales | NY
+
+-- Normalized (Good: Using references)
+-- Employee Table: John | DeptID: 1
+-- Department Table: DeptID: 1 | Name: Sales | Location: NY`
+    },
+    {
+        id: "res-jr-13",
+        category: "Resume Screening (Junior Level)",
+        question: "You listed JWT Authentication. If I log into a website and the server gives my browser a JWT, what actually is that JWT? Is it secretly storing my password?",
+        answer: "A JWT (JSON Web Token) is definitely not storing the password! It's just a long encoded string containing basic public info, like my User ID, and an expiration time. The most important part is the 'Signature' at the end. The server signs the token using a secret key, so if someone tries to manually change their token's ID to pretend to be an Admin, the server will detect the signature is invalid and reject it.",
+        snippet: `// A JWT usually looks like three random strings separated by dots:
+// xxxxx.yyyyy.zzzzz
+// Header . Payload . Signature
+
+// The payload is just readable base64 text, NOT encrypted:
+{
+  "userId": "123",
+  "role": "user",
+  "exp": 1600000000
+}`
+    },
+    {
+        id: "res-jr-14",
+        category: "Resume Screening (Junior Level)",
+        question: "You use Git and GitHub. What is a 'Pull Request', and why do teams use them instead of just saving directly to the main code?",
+        answer: "If everyone pushed code constantly to the main branch, a broken change could crash the live website for all customers. A Pull Request (PR) is like saying, 'Hey team, I made these new changes on a separate copy (branch). Can someone review this?' It allows senior developers to read the code, check for bugs, and run automated tests before the code is safely 'Merged' into the main project.",
+        snippet: `# Typical Junior Git Workflow
+git checkout -b feature/new-button  # Make a safe copy (branch)
+git add .                           # Stage changes
+git commit -m "Added a blue button" # Save changes locally
+git push origin feature/new-button  # Send copy to GitHub
+
+# -> Now go to GitHub.com and literally click "Open Pull Request"`
+    },
+    {
+        id: "res-jr-15",
+        category: "Resume Screening (Junior Level)",
+        question: "Your resume mentions AES-256 Encryption. In the simplest terms, how does symmetric encryption like AES differ from hashing (like storing passwords)?",
+        answer: "Hashing is a one-way street; if I hash a password, I can never turn it back into the original text. Encryption is a two-way street. AES-256 is 'symmetric', meaning I use the exact same secret key to lock (encrypt) the data, and I use that exact same key to unlock (decrypt) it back to its readable form. It's like using one key to lock and unlock a padlock.",
+        snippet: `// Hashing (One-Way):
+// "password123" -> [Hash Function] -> "a8b9f7..." (Cannot reverse this)
+
+// Encryption (Two-Way):
+// "Hello msg" + [Secret Key] -> "x99z1..." (Encrypted)
+// "x99z1..." + [Secret Key] -> "Hello msg" (Decrypted)`
+    },
+    {
+        id: "res-jr-16",
+        category: "Resume Screening (Junior Level)",
+        question: "You listed Environment Configuration. What is an '.env' file, and why is it one of the most important files for security in a project?",
+        answer: "An '.env' file stores secret environment variables like database passwords, API keys, and secret tokens. If we just typed those passwords directly into our 'app.js' file, anyone looking at our GitHub code would steal them. The '.env' file is strictly added to '.gitignore' so it never gets uploaded to the internet, keeping our app's passwords safe on our local computer.",
+        snippet: `// Inside the hidden .env file (NOT on GitHub):
+// MONGODB_PASSWORD=SuperSecret123
+
+// Inside the Javascript code (Uploaded to GitHub):
+const dbPassword = process.env.MONGODB_PASSWORD;
+connectToDatabase(dbPassword);`
+    },
+    {
+        id: "res-jr-17",
+        category: "Resume Screening (Junior Level)",
+        question: "You've worked with Firebase Console. As a beginner, why might you choose Firebase for a new React app instead of building your own Node.js backend from scratch?",
+        answer: "Firebase acts as a 'Backend-as-a-Service'. Instead of spending a week writing a huge Node.js server to handle logins, set up a database, and manage image uploads, Firebase provides instant APIs for all of that. I can literally get Google login working in my React app with just a few lines of code, and store data instantly in their Firestore database without writing any complex server logic.",
+        snippet: `// Junior example: Logging a user in with Firebase
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+
+const auth = getAuth();
+signInWithEmailAndPassword(auth, email, password)
+  .then((userCredential) => {
+    // Boom! The user is logged in securely without writing any backend code.
+    console.log("Welcome", userCredential.user.email);
+  });`
+    },
+    {
+        id: "res-jr-18",
+        category: "Resume Screening (Junior Level)",
+        question: "You listed ES6+ JavaScript. What is the difference between writing 'var' versus writing 'let' or 'const' when creating a variable?",
+        answer: "We mostly stopped using 'var' because it causes confusing bugs related to scoping (it leaks out of loops and blocks). 'let' creates a variable that can be reassigned but correctly stays inside the block `{}` it was created in. 'const' creates a variable that can never be reassigned. Generally, you should always use 'const' unless you know the value will definitely change.",
+        snippet: `// Why 'var' is confusing:
+if (true) {
+  var x = 10;
+}
+console.log(x); // 10! Wait, 'x' leaked out of the brackets!
+
+// ES6+ 'let' fixes this:
+if (true) {
+  let y = 10;
+}
+console.log(y); // ERROR: y is not defined. (Good, it stayed inside!)`
+    },
+    {
+        id: "res-jr-19",
+        category: "Resume Screening (Junior Level)",
+        question: "You mentioned ERC-721 NFT Standards. What natively makes an ERC-721 token an 'NFT' compared to a normal ERC-20 token like Bitcoin or Ethereum?",
+        answer: "The 'NF' means Non-Fungible. ERC-20 tokens are fungible, meaning my 1 Bitcoin is exactly equal to your 1 Bitcoin—they are identical, like dollar bills. An ERC-721 token is Non-Fungible, meaning every single token has a completely unique ID and metadata. It's like a specific plane ticket; it belongs to one person, has a specific seat number, and cannot be perfectly swapped for another identical ticket.",
+        snippet: `// ERC-20 (Fungible - Money)
+// Everyone just has a balance number.
+// balances["Alice"] = 100 tokens.
+
+// ERC-721 (Non-Fungible - Unique Items)
+// Each specific token ID is mapped to a specific owner.
+// ownersOf[Token #1] = "Alice"
+// ownersOf[Token #2] = "Bob"`
+    },
+    {
+        id: "res-jr-20",
+        category: "Resume Screening (Junior Level)",
+        question: "You use Postman as a tool. If your frontend app says 'Login Failed', how does Postman help you figure out if the bug is in the React code or the Node.js backend code?",
+        answer: "Postman lets me completely bypass the React frontend and send an HTTP request directly to the backend API. I can use Postman to manually POST the email and password to the `/login` route. If the backend returns a success message in Postman, I know my backend database logic is completely fine, and the bug must be somewhere in my React code. If Postman gets an error, I know the backend itself is broken.",
+        snippet: `// How a junior uses Postman to isolate bugs
+// 1. Open Postman app.
+// 2. Select 'POST' and type 'http://localhost:5000/api/login'.
+// 3. Put {"email": "test@test.com", "password": "123"} in the JSON body.
+// 4. Hit Send.
+// 5. Read the raw error message to see exactly what the server thinks went wrong.`
     }
 ];

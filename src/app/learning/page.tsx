@@ -175,7 +175,7 @@ export default function LearningPage() {
 
             <footer>
                 <div className="container">
-                    <p>&copy; 2026 Google Cloud Tech Conference. Built with Next.js.</p>
+                    <p>&copy; 2026 Dev Interview Prep Hub. Built with Next.js.</p>
                 </div>
             </footer>
         </>
